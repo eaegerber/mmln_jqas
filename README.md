@@ -1,6 +1,8 @@
 # mmln: Mixed Multinomial Logistic Normal modeling
 ## Last Update: March 2023 (needs work)
 Applied to forecasting baseball batting outcomes for players transitioning between NPB and MLB
+For paper based on this work, and to cite usage, please see:
+Gerber, E., Craig, B. (2021). A mixed effects multinomial logistic-normal model for forecasting baseball performance. *Journal of Quantitative Analysis in Sports, 17*(3), 221-239. https://doi.org/10.1515/jqas-2020-0007.
 
 ## mmln_helpers.R
 Contains functions necessary for running the algorithms defined in mmln.R
