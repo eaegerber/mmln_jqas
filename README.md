@@ -1,4 +1,4 @@
-# mmln: Mixed Multinomial Logistic Normal modeling
+# mmln_jqas: Mixed Multinomial Logistic Normal modeling
 ## Last Update: March 2023 (needs work)
 Applied to forecasting baseball batting outcomes for players transitioning between NPB and MLB
 
