@@ -188,39 +188,54 @@ source("mmln_predict.R")
 #end.test <- Sys.time()
 
 
-# ## EVENTUALLY NEED TO BE UPDATED WITH NEW PACKAGE
-# Xtrain_mat <- data.matrix(true_X2[,-14])
-# testrun <- MMLN(Y = true_W, X = Xtrain_mat, Z = data.matrix(Z), n_iter = 1000, burn_in = 300, thin = 2, mh_scale = .75)
+## EVENTUALLY NEED TO BE UPDATED WITH NEW PACKAGE
+Xtrain_mat <- data.matrix(true_X2[,-14])
+testrun <- MMLN(Y = true_W, X = Xtrain_mat, Z = data.matrix(Z), n_iter = 2000, burn_in = 600, thin = 2, mh_scale = .75)
 
-# tracetest <- plot_trace_and_summary(simplify2array(testrun$beta_chain))
+tracetest <- plot_trace_and_summary(simplify2array(testrun$beta_chain))
 
-# # make sure it fits well
-# train_pred_list <- lapply(seq_along(testrun$w_chain), function(i) {
-#   sample_posterior_predictive(X = Xtrain_mat,
-#                               beta = testrun$beta_chain[[i]],
-#                               Sigma = testrun$sigma_chain[[i]],
-#                               n = pa,
-#                               Z = data.matrix(Z),
-#                               psi = testrun$psi_chain[[i]],
-#                               mixed = TRUE
-#     )
-# })
-# # Get residuals for training data (note that might not work if there are predictive distributions with no variance)
-# # Might need to ignore those
-# # resids <- MDres(true_W, train_pred_list)
-# # summary(resids)
+# make sure it fits well
+train_pred_list <- lapply(seq_along(testrun$w_chain), function(i) {
+  sample_posterior_predictive(X = Xtrain_mat,
+                              beta = testrun$beta_chain[[i]],
+                              Sigma = testrun$sigma_chain[[i]],
+                              n = pa,
+                              Z = data.matrix(Z),
+                              psi = testrun$psi_chain[[i]],
+                              mixed = TRUE,
+                              verbose = FALSE
+    )
+})
+
+#######
+### This is where I've ended; need to figure out how to get the residuals and check the fit of the model before moving on to predictions for new players. Also need to figure out how to handle the singular predictive distributions (where all posterior predictive draws are the same, so no variance) when calculating residuals and checking fit.
+#######
+save.image("Feb272025_midrun.RData")
+
+
+
+
+
+# Get residuals for training data (note that might not work if there are predictive distributions with no variance)
+# Might need to ignore those
+# resids <- MDres(true_W, train_pred_list)
+# summary(resids)
 
 #Do it with Gelman's weakly informative prior
 #Seems to converge much faster than original, completely disperse prior
 #Still need to figure out if final prediction intervals are actually narrower though...
-start.test <- Sys.time()
-testrun <- mixgibbs(W = true_W, X = as.matrix(true_X2[,-14]), Z = Z, base = 10, iter = 1000, proposal = "normbeta", whichYstart = "mean", whichCOVprior = "weak")
-end.test <- Sys.time()
+# start.test <- Sys.time()
+# testrun <- mixgibbs(W = true_W, X = as.matrix(true_X2[,-14]), Z = Z, base = 10, iter = 1000, proposal = "normbeta", whichYstart = "mean", whichCOVprior = "weak")
+# end.test <- Sys.time()
 
-burnthin <- seq(301, 1001, 2)
+# burnthin <- seq(301, 1001, 2)
 
 #Will use this run to predict the new players.
 #To do so, need to get their random effects.
+
+### Replace below with new package output once I have it; note that burnin is already taken care of in the MMLN function
+### Note also that the resulting predicive distributions will be N x 10, not P x 10 so should work with MDres (unlike the way I did it previously)
+### Still will need to figure out how to handle the singular predictive distributions (where all posterior predictive draws are the same, so no variance)
 
 Y_samples <- testrun$Y[burnthin,]
 Beta_samples <- testrun$Beta[burnthin,]
@@ -271,6 +286,12 @@ head(post.means)
 full.post.means <- matrix(unlist(lapply(fullpreds, function(x) colMeans(x$predw))), byrow = T, ncol = 10)
 colnames(full.post.means) <- colnames(true_W)
 head(full.post.means)
+
+# Keep track of singular predictions (where all posterior predictive draws are the same, so no variance)
+singular_preds <- sapply(fullpreds, function(x) all(apply(x$predw, 2, function(col) length(unique(col)) == 1)))
+Y_pred_list <- lapply(fullpreds, function(x) x$predw) # need to flip things so that each list is the N x 10, not the P x 10...
+fullMD <- MDres(true_W, Y_pred_list)
+
 
 for(i in 1:10){
   plot(sqrt(true_W[,i]), sqrt(full.post.means[,i]))
